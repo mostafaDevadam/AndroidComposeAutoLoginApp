@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.Nullable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -13,12 +14,14 @@ import androidx.compose.foundation.gestures.draggable2D
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,7 +51,8 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
-
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.HorizontalDivider
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -145,105 +149,158 @@ fun HomeScreen(
     context: Context,
     token: String,
     onLogout: () -> Unit
-){
-
-    //TopToastScreen()
-
+) {
     val vm: MessageViewModel = viewModel()
     val state by vm.uiState.collectAsState()
+    val listState by vm.uiListState.collectAsState()
 
     LaunchedEffect(Unit) {
         Toast.makeText(context, "Welcome Back!", Toast.LENGTH_LONG).show()
-
     }
 
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center
+    // Entire screen is now a single LazyColumn
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-
-        Text(text = "Welcome",
-            style = MaterialTheme.typography.headlineMedium
+        // 1. Header Section
+        item {
+            Text(
+                text = "Welcome",
+                style = MaterialTheme.typography.headlineMedium
             )
+        }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        item {
+            Text(text = "Token: $token")
+        }
 
-        Text(text = "Token: $token",
+        item {
+            HorizontalDivider()
+            Text(text = "Volley!", style = MaterialTheme.typography.headlineSmall)
+        }
 
-        )
+        // fetch using Volley!
 
-        Spacer(modifier = Modifier.height(30.dp))
 
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ){
-            when(val uiState = state){
+
+
+        item {
+            HorizontalDivider()
+            Text(text = "Retrofit!", style = MaterialTheme.typography.headlineSmall)
+        }
+
+
+        // 2. Single Message Section (uiState)
+        item {
+            when (val uiState = state) {
                 is UiState.Loading -> {
                     CircularProgressIndicator()
                 }
                 is UiState.Success -> {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = uiState.message,
-                            style= MaterialTheme.typography.headlineSmall
+                            text = "Success: ${uiState.success.toString()}",
+                            style = MaterialTheme.typography.headlineSmall
                         )
-                        Spacer(modifier = Modifier.height(30.dp))
-                        Button(onClick = { vm.fetchMessage()}) {
-                            Text("Refresh")
+                        Text(
+                            text = "Status: ${uiState.status}",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Text(
+                            text = "Message: ${uiState.message}",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Button(onClick = { vm.fetchMessage() }) {
+                            Text("Refresh Single Message")
                         }
                     }
                 }
-
                 is UiState.Error -> {
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    Column {
                         Text(
                             text = "Error: ${uiState.errorMsg}",
                             color = MaterialTheme.colorScheme.error
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { vm.fetchMessage()}) {
-                            Text("Retry")
+                        Button(onClick = { vm.fetchMessage() }) {
+                            Text("Retry Single Message")
                         }
                     }
-
                 }
-
-                else -> {}
             }
-
-
         }
 
-       /* Spacer(modifier = Modifier.height(30.dp))
+        // 3. List Section Header / Divider
+        item {
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider()
+            Text(
+                text = "Message List:",
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
 
-        Button(
-            onClick = {
+        // 4. Dynamic List Section (listState)
+        when (val lState = listState) {
+            is UiListState.Loading -> {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+            is UiListState.Success -> {
+                // items() adds each item directly into the parent LazyColumn scope
+                items(lState.messages) { item ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = item.message,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Time: ${item.timestamp}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                }
+            }
+            is UiListState.Error -> {
+                item {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Error: ${lState.errorMsg}",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Button(onClick = { vm.fetchMessageList() }) {
+                            Text("Retry List")
+                        }
+                    }
+                }
+            }
+        }
 
-            },
-            modifier = Modifier.fillMaxWidth()
-        ){
-            Text("Fetch Msg")
-        }*/
-
-        Spacer(modifier = Modifier.height(30.dp))
-
-        Button(
-            onClick = onLogout,
-            modifier = Modifier.fillMaxWidth()
-        ){
-            Text("Logout")
+        // 5. Logout Button at the bottom
+        item {
+            Spacer(modifier = Modifier.height(20.dp))
+            Button(
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Logout")
+            }
         }
     }
-
 }
+
 
 // Login Screen
 @Composable
@@ -256,7 +313,9 @@ fun LoginScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
