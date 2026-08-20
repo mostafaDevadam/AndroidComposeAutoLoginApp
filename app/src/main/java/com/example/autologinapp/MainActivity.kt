@@ -154,6 +154,10 @@ fun HomeScreen(
     val state by vm.uiState.collectAsState()
     val listState by vm.uiListState.collectAsState()
 
+    val vvm: MsgVolleyViewModel = viewModel()
+    val vState by vvm.uiVState.collectAsState()
+    val vlistState by vvm.uiVListState.collectAsState()
+
     LaunchedEffect(Unit) {
         Toast.makeText(context, "Welcome Back!", Toast.LENGTH_LONG).show()
     }
@@ -184,6 +188,94 @@ fun HomeScreen(
 
         // fetch using Volley!
 
+        // Single Message using Volley
+        item {
+            when (val uivState = vState) {
+                is UiVState.Loading -> {
+                    CircularProgressIndicator()
+                }
+                is UiVState.Success -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        /*Text(
+                            text = "Success: ${uivState.success.toString()}",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Text(
+                            text = "Status: ${uivState.status}",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+
+                         */
+                        Text(
+                            text = "Volley Message: ${uivState.message}",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Button(onClick = { vm.fetchMessage() }) {
+                            Text("Refresh Single Message")
+                        }
+                    }
+                }
+                is UiVState.Error -> {
+                    Column {
+                        Text(
+                            text = "Volley Error: ${uivState.errorMsg}",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Button(onClick = { vvm.fetchMessage() }) {
+                            Text("Volley Retry Single Message")
+                        }
+                    }
+                }
+            }
+        }
+
+
+        // MessagesList using Volley
+
+        when (val lState = vlistState) {
+            is UiListState.Loading -> {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+            is UiListState.Success -> {
+                // items() adds each item directly into the parent LazyColumn scope
+                items(lState.messages) { item ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = item.message,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Time: ${item.timestamp}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                }
+            }
+            is UiListState.Error -> {
+                item {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Error: ${lState.errorMsg}",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Button(onClick = { vvm.fetchMessagesArray() }) {
+                            Text("Retry List")
+                        }
+                    }
+                }
+            }
+        }
 
 
 
@@ -202,15 +294,15 @@ fun HomeScreen(
                 is UiState.Success -> {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Success: ${uiState.success.toString()}",
+                            text = "Retrofit Success: ${uiState.success.toString()}",
                             style = MaterialTheme.typography.headlineSmall
                         )
                         Text(
-                            text = "Status: ${uiState.status}",
+                            text = "Retrofit Status: ${uiState.status}",
                             style = MaterialTheme.typography.headlineSmall
                         )
                         Text(
-                            text = "Message: ${uiState.message}",
+                            text = "Retrofit Message: ${uiState.message}",
                             style = MaterialTheme.typography.headlineSmall
                         )
                         Button(onClick = { vm.fetchMessage() }) {
@@ -221,7 +313,7 @@ fun HomeScreen(
                 is UiState.Error -> {
                     Column {
                         Text(
-                            text = "Error: ${uiState.errorMsg}",
+                            text = "Retrofit Error: ${uiState.errorMsg}",
                             color = MaterialTheme.colorScheme.error
                         )
                         Button(onClick = { vm.fetchMessage() }) {
