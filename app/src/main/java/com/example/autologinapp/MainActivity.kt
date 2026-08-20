@@ -32,6 +32,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,7 +44,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 
 
@@ -146,6 +149,9 @@ fun HomeScreen(
 
     //TopToastScreen()
 
+    val vm: MessageViewModel = viewModel()
+    val state by vm.uiState.collectAsState()
+
     LaunchedEffect(Unit) {
         Toast.makeText(context, "Welcome Back!", Toast.LENGTH_LONG).show()
 
@@ -166,6 +172,66 @@ fun HomeScreen(
         Text(text = "Token: $token",
 
         )
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ){
+            when(val uiState = state){
+                is UiState.Loading -> {
+                    CircularProgressIndicator()
+                }
+                is UiState.Success -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+
+                        Text(
+                            text = uiState.message,
+                            style= MaterialTheme.typography.headlineSmall
+                        )
+                        Spacer(modifier = Modifier.height(30.dp))
+                        Button(onClick = { vm.fetchMessage()}) {
+                            Text("Refresh")
+                        }
+                    }
+                }
+
+                is UiState.Error -> {
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Error: ${uiState.errorMsg}",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { vm.fetchMessage()}) {
+                            Text("Retry")
+                        }
+                    }
+
+                }
+
+                else -> {}
+            }
+
+
+        }
+
+       /* Spacer(modifier = Modifier.height(30.dp))
+
+        Button(
+            onClick = {
+
+            },
+            modifier = Modifier.fillMaxWidth()
+        ){
+            Text("Fetch Msg")
+        }*/
 
         Spacer(modifier = Modifier.height(30.dp))
 
